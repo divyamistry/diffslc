@@ -1,0 +1,39 @@
+========
+FOLDERS
+========
+GSE3431/ - folder with CEL files and SOFT files from NCBI GEO and author's website http://moment.utmb.edu/cgi-bin/dload.cgi
+
+IDLists/
+  - DIP_Prot_Names_in_LargestConnComp.tsv - DIP interactor names in largest connected component of graph. DIP interaction id's from DIP 2015-01-01 dataset. Used for Uniprot and other matching queries.
+  - RepPubID.txt - There are 6757 Representative Public IDs to match against all probesets. We'll take these as our "genes".
+  - TranscriptID.txt - all the probeset ids from Tu et.al.'s YG_S98 affy experiment
+  - YG-S98_control - control probes from YG_S98 affy chip
+
+old/
+  contains files that are based on older analysis/code. They're here in case I need to refer them for something.
+------ ***** -------
+
+========
+FILES
+========
+
+Final_hybrid_network.RDS - Network for analysis in this work
+Full_RMA_Processed_Expression_Matrix.RDS - RMA processed Tu et.al. (GSE3431) formed into an expression matrix
+
+uniq_expr_rma.RDS  -  expression matrix from GSE3431 that was processed to only keep 6777 probesets corresponding to transcribed regions
+
+yeastDIP_Screre20150101.txt  - protein-protein interaction information from Database of Interacting Proteins (DIP) at http://dip.doe-mbi.ucla.edu/dip/Download.cgi
+mod_yeastDIP_Scere20150101.tsv = DIP 2015-01-01 release cleaned up to match a standard tab-separated value format.
+
+degannotation-e.dat - Annotation results from DEG (Database of Essential Genes)
+
+yeastDIP_Scere20150101.mif25 - DIP data from 2015-01-01 release in MIF 2.5 format
+yeastDIP_Scere20150101.txt - DIP data from 2015-01-01 release in PSI-MI Tab 2 format
+
+minimal_DIP_interaction_data.csv - processed protein interaction data from DIP's 2015-01-01 release. Edgelist <Node A, Node B> type output with some additional metadata is stored here.
+
+DIP-to-Uniprot-Matched-IDs.tab - data downloaded from Uniprot to map DIP to Uniprot/SGD/etc.
+
+DIPtoAffy_with_additionalAnnotations.tsv - data frame with DIP interactor ID mapped to upto four Affy YG_S98 probesets. Unmapped DIP interactors or the ones matching with more than 4 probesets are NA.
+
+0README  - this file
