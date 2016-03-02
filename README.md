@@ -1,2 +1,190 @@
-# diffslc
-DiffSLc Centrality Implementation
+# Reproducing our work
+Divya Mistry  
+May 12, 2015  
+
+This document lists the steps and data sources to reproduce the analysis provided in this publication. 
+<!-- The document is provided as-is under MIT license. Feel free to reuse as you please, and we'd appreciate proper credit for the work. -->
+
+### Step 0: Directory arrangements used for analysis
+
+```
+--(root)
+  |-- data (folder with raw and processed data.)
+  |-- doc  (folder with documentation and useful notes.)
+  |-- src  (source code relevant to the analysis.)
+      |-- pre-prep (source code to prepare data in useful form using raw data.)
+```
+
+Start an R session in the `(root)` folder. Ensure that working directory is set to this folder.
+
+
+```r
+getwd()
+# if output is not the right directory run the following command
+setwd(dir = '/location/to/the/root/directory')
+# replace the "dir =" string with correct location
+```
+
+### Step 1: Get raw expression data.
+The CEL files for GSE3076 and GSE3431 can be obtained at following URLs:\
+- Tu et.al. (GSE3431) <http://moment.utmb.edu/cgi-bin/dload.cgi>\
+- Guan et.al. (GSE3076) <http://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE3076>
+
+Place the CEL and related files in `data/GSE3431` and `data/GSE3076` folders.
+
+Run the following code:
+
+
+```r
+# read CEL files from data/GSE3431, outputs RMA normalized matrix in the
+# following file: data/Full_RMA_Processed_GSE3431_Expression_Matrix.RDS
+source('src/pre-prep/get_Tu_etal_data.R')
+# read CEL files from data/GSE3431, outputs RMA normalized matrix in the
+# following file: data/Full_RMA_Processed_GSE3076_Expression_Matrix.RDS
+source('src/pre-prep/get_Guan_etal_data.R') # reads CEL files from data/GSE3076
+```
+
+*Note: Make sure to read the comments inside the code for additional helpful files produced for debugging and convenience.*
+
+### Step 2: Get protein interaction and annotation data
+
+*Note: Some of the files are not included with the project due to copyright restrictions. In such cases, a link to the source is provided*
+
+[DIP (Database of Interacting Proteins)](http://dip.doe-mbi.ucla.edu/dip/Download.cgi) provides yeast specific protein interaction data. We downloaded the 20150101 release, which is provided in the `data` folder. The downloads are called `data/yeastDIP_Scere20150101.txt` (or a different extension for different file format). A transformed file is also provided as `data/mod_yeastDIP_Scere20150101.tsv` for easier data table parsing through R.
+
+
+```r
+# parse DIP data to create minimal data frame with only necessary information
+source('src/pre-prep/process_DIP_20150101_data.R')
+# output is stored in data/minimal_DIP_interaction_data.csv
+```
+
+
+Next, we need the Affymetrix Yeast Genome S98 related annotations to map between DIP and Affy. At the time of our analysis, [NetAffx release 34](http://www.affymetrix.com/Auth/analysis/downloads/na34/ivt/YG_S98.na34.annot.csv.zip) annotation was used for this analysis.
+
+Finally, UniProtKB/SwissProt database provides a way to match identifiers available thrugh both of the above-metnioned downloaded datasets. Results from matching DIP interactor and UniProt, Common gene names, synonyms, etc. was queried and downloaded. The resulting downloaded annotation description set is provided in the file `data/DIP-to-Uniprot-Matched-IDs.tab`. 
+
+### Step 3a: Mapping between DIP interactor and YG_S98 NetAffx annotations
+
+This part is provided to help understand the mapped and unmapped identifiers between DIP, UniProt, and Affy, there are two R scripts provided: (1) `src/pre-prep/consolidate_DIP_Uniprot.R` has DIP to Affy conflicts and mapping, and (2) `src/pre-prep/consolidate_DIP_Uniprot.R` has DIP to UniProt matching. This is mostly used to get an idea of how many unmatched identifiers exist and help decide how to deal with them.
+
+After obtaining the files, run the following command:
+
+```r
+source('src/pre-prep/DIP_to_Affy_Mapping.R')
+```
+
+This creates `data/DIPtoAffy_with_additionalAnnotations.tsv` file with DIP mapped against UniProt and Affy annotations for the cases where matches exist. The code also calls `src/pre-prep/DipMapper.R` to create two functions in current environment. (1) `DipMapper()` functions maps a DIP id to up to 4 yg\_s98 affy probesets. (Read code comments for more details on this.), and (2) `DipEssential()` function maps a DIP id to whether any of the matched corresponding genes are known to be essential from [Database of Essential Genes (DEG)](http://tubic.tju.edu.cn/deg/show.php?selfield=ac&term=DEG2001&page=1&db=e) which curated list from [Saccharomyces Genome Deletion Project (SGDP)](http://www-sequence.stanford.edu/group/yeast_deletion_project/).
+
+This section/step is purely for diganostics purpose. There is no side-effect on the final created network of this code. Part of this work is done again in next section to create network for use with our analysis.
+
+(**Tip:** _To run analysis with updated lists, you can get the newer Affy annotations, DIP data, and run the DIP identifier at [UniProt ID Mapping](http://www.uniprot.org/uploadlists/). Be sure to choose "From = DIP" when requesting ID mappings._)
+
+### Step 3b: Protein-protein interaction network based on DIP data, created with Affy probeset ID's added for each of the proteins.
+
+
+```r
+# read DIP interaction data, and create network from it. Some additional
+# network processing comments are available in code comments.
+source('src/pre-prep/make_network.R')
+```
+
+This creates network from DIP data, removes self-loops, and removes singletons or disconnected edges (i.e. two nodes exclusively connected to each other). The full analysis can be performed on the whole disconnected network. Over 95% of the network is in the largest connected component of the network. Some of the centrality measures we wish to compare do not work on disconnected networks, so we save this largest connected component for further processing. This is done at the end of the `make_network.R` code.
+
+### Step 4: Compute DiffSLc and other centralities for the connected network.
+
+For each of the coexpression datasets, a separate graph statistics code is provided in following files. These datasets are integrated into the DIP protein-protein interaction network (referred to as **Network N0** in the original publication.)
+
+
+```r
+# For Tu et.al. data (GSE 3431). This generates hybridG.gse3431 igraph network
+source('src/graph_statistics_gse3431.R')
+# For Guan et.al. data (GSE 3076). This generates hybridG.gse3076 igraph network
+source('src/graph_statistics_gse3076.R')
+# Look at the available node and edge attributes used for centrality calculations
+require(igraph)
+graph.attributes(graph = hybridG.gse3431) #for DIP + Tu et.al.
+vertex.attributes(graph = hybridG.gse3431)
+edge.attributes(graph = hybridG.gse3431)
+```
+
+You can play around with various $\beta$ and $\omega$ values for BDC+DiffSLc calculations. Some example runs are at the end of the `graph_statistics_gse3431.R` code. Alternatively, you can look at the impact of a range of different values on AUC of the ROC from `src/beta-omega-table.R`. This file creates a matrix of AUC of ROC for different $\beta$ and $\omega$ values. Part of this result is reported in **Table S2** in the original publication.
+
+### Step 5: Producing figures in publication. The ROC and P-R curves. Bar charts of top 25% of the networks, and Venn diagrams.
+
+The ROC curves and Precision-Recall curves can be generated once all the graph statistics are computed. Following code should generate all the ROC, P-R, and barchart plots.
+
+
+```r
+source('src/somePlots_N0.R') # plot N0 ROC
+source('src/somePlots_NT.R') # plot NT ROC and barcharts
+source('src/somePlots_NF.R') # plot NF ROC and barcharts
+source('src/somePlots_NT-NF-Comparison.R') # plot degree, NT, NF P-R curve
+```
+
+### Additional Files: Source code used by, but not directly mentioned in this document
+There are `getDCC.R`, `getECC.R`, etc. similarly named files with corresponding functions. These functions calculate the various coexpression and centrality measures. `getOrderedCummulativeCounts.R` is used to keep running counts of `TRUE` values in a data.frame with a give column, based on sorting other columns of the data.frame. Example shown below:
+
+
+```r
+source('../src/getOrderedCummulativeCounts.R')
+# toy data frame
+(df <- data.frame(Col1 = rnorm(20), Col2 = runif(20)/rnorm(20,mean = 20), Response = (sample(2000,20) > 1000)))
+```
+
+```
+##           Col1        Col2 Response
+## 1   1.25746346 0.023763221    FALSE
+## 2   0.78863987 0.053591267     TRUE
+## 3  -0.83887271 0.021181822     TRUE
+## 4  -0.65760417 0.007734196     TRUE
+## 5  -0.04051555 0.050680886     TRUE
+## 6  -1.85270582 0.003363318     TRUE
+## 7  -1.31665336 0.045919340     TRUE
+## 8   1.55184090 0.004937260    FALSE
+## 9   1.56103738 0.007587167    FALSE
+## 10  0.51199443 0.015740591    FALSE
+## 11  1.42669426 0.039939159    FALSE
+## 12  0.13948303 0.013701518     TRUE
+## 13  2.28183261 0.050632738     TRUE
+## 14  0.69770422 0.024475576     TRUE
+## 15 -0.24098764 0.035969775     TRUE
+## 16 -1.21407495 0.026002926     TRUE
+## 17 -0.02989191 0.009999416     TRUE
+## 18  0.42752429 0.017069811    FALSE
+## 19  0.22058120 0.003179584    FALSE
+## 20  1.24857876 0.044944926     TRUE
+```
+
+```r
+# cummulative counts of TRUEs at row 1, at row 2, at row 3, and so on,
+# when Col1 is sorted, and when Col2 is sorted. Default sort is descending.
+getOrderedCummulativeCounts(df = df, countColumn = "Response", decreasing = T)
+```
+
+```
+##    Col1 Col2
+## 1     1    1
+## 2     1    2
+## 3     1    3
+## 4     1    4
+## 5     1    5
+## 6     2    5
+## 7     3    6
+## 8     4    7
+## 9     4    8
+## 10    4    8
+## 11    4    9
+## 12    5    9
+## 13    6    9
+```
+
+```r
+# output should have (i) number of rows = number of TRUE in "Response" column, and 
+# (ii) number of columns = number of non-"Response" columns.
+```
+
+More details are available along with the functions in their respective files.
+
+### Final thoughts
+Feel free to fork this repo, modify this data and document as you see fit. It has taken a while to slim/trim down the code enough to keep it concise and useful. If you find this useful, I sincerely urge you to do the same for your work and analysis.
