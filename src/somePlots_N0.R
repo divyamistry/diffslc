@@ -37,5 +37,7 @@ myplot <- ggplot(data = resultDF, aes(FPR, TPR, color=Centrality)) +
   geom_line(size = 0.5) +
   scale_color_discrete(name = "Centrality",
                        breaks = levels(resultDF$Centrality),
-                       labels = paste(c("DC", "BC","CC","EC","SGC"),", AUC: ",format(resultAUC,digits = 4),sep =''))
+                       labels = paste(c("DC", "BC","CC","EC","SGC"),", AUC: ",format(resultAUC,digits = 3),sep =''))
 plot(myplot)
+
+# ggsave(path = choose.dir(), filename = "N0_ROC.tiff", plot = myplot, device = "tiff", units = "in", width = 11, height = 8.5, dpi = 100)
