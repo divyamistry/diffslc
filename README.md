@@ -3,7 +3,17 @@
 A python package to calculate DiffSLC for a network is available at [diffslc-py](https://github.com/divyamistry/diffslc-py) repository. The package includes a single-file python script if you wish to use it as a command-line scirpt instead of a package in your program. The usage for the script is given below. Additional details are provided in the [diffslc-py](https://github.com/divyamistry/diffslc-py) repo:
 
 ```bash
-python diffslc --network NETWORK_FILE --coexpr GENE_COEXPRESSION_MATRIX
+$ diffslcpy-cl --help
+Usage: diffslcpy-cl [options] arg
+
+Options:
+-h, --help            show this help message and exit
+-c COEXPRFILE, --coexpr_file=COEXPRFILE
+                      File containing the gene coexpression matrix.
+                      [coexpression.expr]
+-g NETFILE, --graph_file=NETFILE
+                      File containing the PPI network in NetworkX adjacency
+                      list or GraphML format. [graph.graphml]
 ```
 
 ---
